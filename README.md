@@ -1,6 +1,6 @@
 # Redbubble Scala Utilities
 
-Miscellaneous utilities (common code) for building Scala-based services, using Finch. This code was extracted out of the services template used in production at Redbubble for building fast, stateless services in Scala.
+Miscellaneous utilities (common code) for building Scala-based services, using Finch. This code was extracted out of the services template used in production at Redbubble for building fast, stateless services in Scala, including the API that powers our [iOS app](https://itunes.apple.com/au/app/redbubble/id1145737091?mt=8).
 
 If you like this, you might like other open source code from Redbubble (which make use of this project):
 
