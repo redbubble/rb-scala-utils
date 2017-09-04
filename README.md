@@ -16,10 +16,10 @@ You will need to add something like the following to your `build.sbt`:
 ```scala
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.0.1"
+libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.1.0"
 ```
 
-# Making a Release
+# Release
 
 For contributors, a cheat sheet to making a new release:
 
