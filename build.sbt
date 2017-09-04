@@ -38,6 +38,15 @@ scalacOptions ++= Seq(
 
 )
 
+resolvers ++= Seq(
+  Resolver.jcenterRepo,
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots"),
+  "Twitter" at "http://maven.twttr.com"
+)
+
+scalacOptions in Test ++= Seq("-Yrangepos")
+
 lazy val catsVersion = "0.9.0"
 lazy val mouseVersion = "0.9"
 lazy val circeVersion = "0.8.0"
