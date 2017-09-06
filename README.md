@@ -1,6 +1,6 @@
-# Redbubble Scala Utilities
-
 [![Build status](https://img.shields.io/travis/redbubble/rb-scala-utils/master.svg)](https://travis-ci.org/redbubble/rb-scala-utils)
+
+# Redbubble Scala Utilities
 
 Miscellaneous utilities (common code) for building Scala-based services, using Finch. This code was extracted out of the services template used in production at Redbubble for building fast, stateless services in Scala, including the API that powers our [iOS app](https://itunes.apple.com/au/app/redbubble/id1145737091?mt=8).
 
