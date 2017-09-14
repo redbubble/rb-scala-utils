@@ -1,11 +1,11 @@
 package com.redbubble.util.fetch
 
-import com.redbubble.util.cache.{CacheKey, MemoryCache}
+import com.redbubble.util.cache.{CacheKey, SimpleCache}
 import com.redbubble.util.fetch.TwitterFutureFetchMonadError.twitterFutureFetchMonadError
 import com.twitter.util.{Await, Future, FuturePool}
 import fetch._
 
-final case class FetchedObjectCache(underlying: MemoryCache) extends DataSourceCache {
+final case class FetchedObjectCache(underlying: SimpleCache) extends DataSourceCache {
   override def get[A](k: DataSourceIdentity) = {
     val valueFuture = underlying.get[A](CacheKey(k.toString))
     Await.result(valueFuture)
@@ -17,7 +17,7 @@ final case class FetchedObjectCache(underlying: MemoryCache) extends DataSourceC
   }
 }
 
-final case class FetcherRunner(c: MemoryCache)(implicit fp: FuturePool) {
+final case class FetcherRunner(c: SimpleCache)(implicit fp: FuturePool) {
   private val cache = FetchedObjectCache(c)
 
   /**
