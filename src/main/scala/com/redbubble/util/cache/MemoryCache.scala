@@ -1,5 +1,6 @@
 package com.redbubble.util.cache
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.{Executor, TimeUnit}
 
 import com.redbubble.util.async.syntax._
@@ -72,5 +73,56 @@ object MemoryCache {
         case NonLoggingCaffeineCache(underlying) => Some(underlying.estimatedSize())
         case _ => None
       }
+    }
+}
+
+object RedisMemoryCache {
+  private val flags = Flags(readsEnabled = true, writesEnabled = true)
+
+  class RedisCodec[T] extends Codec[T, Array[Byte]] {
+    override def serialize(value: T): Array[Byte] = {
+      val stream: ByteArrayOutputStream = new ByteArrayOutputStream()
+      val oos = new ObjectOutputStream(stream)
+      oos.writeObject(value)
+      oos.close
+      stream.toByteArray
+    }
+
+    override def deserialize(data: Array[Byte]): T = {
+      val ois = new ObjectInputStream(new ByteArrayInputStream(data))
+      val value = ois.readObject
+      ois.close
+      value.asInstanceOf[T]
+    }
+  }
+
+//  class RedisCodec extends Codec[Any, Array[Byte]] with RedisSerialization
+
+  def newCache(name: String, host: String, port: Int, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver): MemoryCache =
+    new MemoryCache {
+
+      import scalacache._
+
+      private val scalaTtl = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
+      private val cache: ScalaCache[Array[Byte]] = CacheOps.newRedisCache(name, host, port, scalaTtl, ex)
+      private val ec = fromExecutor(ex)
+
+      override def caching[V](key: CacheKey)(f: => Future[V]) = {
+        val codec: Codec[V, Array[Byte]] = new RedisCodec[V]()
+//        val codec = implicitly[Codec[V, Array[Byte]]]
+        scalacache.cachingWithTTL[V, Array[Byte]](key)(scalaTtl)(f.asScala)(cache, flags, ec, codec).asTwitter(ec)
+      }
+
+      override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
+        val codec: Codec[V, Array[Byte]] = new RedisCodec[V]()
+        scalacache.put[V, Array[Byte]](key)(value, Some(scalaTtl))(cache, flags, codec).asTwitter(ec)
+      }
+
+      override def get[V](key: CacheKey) = {
+        val codec: Codec[V, Array[Byte]] = new RedisCodec[V]()
+        scalacache.get[V, Array[Byte]](key)(cache, flags, codec).asTwitter(ec)
+      }
+
+      override def flush() = cache.cache.removeAll().asTwitter(ec)
     }
 }

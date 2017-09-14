@@ -100,6 +100,7 @@ libraryDependencies ++= Seq(
   "io.dropwizard.metrics" % "metrics-core" % metricsVersion,
   "com.palominolabs.metrics" % "metrics-new-relic" % metricsNewRelicVersion,
   "com.github.cb372" %% "scalacache-caffeine" % scalaCacheVersion,
+  "com.github.cb372" %% "scalacache-redis" % scalaCacheVersion,
   "ch.qos.logback" % "logback-core" % logbackVersion,
   "ch.qos.logback" % "logback-classic" % logbackVersion,
   "org.slf4j" % "slf4j-api" % slf4jVersion,

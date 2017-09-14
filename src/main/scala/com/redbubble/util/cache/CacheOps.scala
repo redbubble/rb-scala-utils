@@ -6,7 +6,8 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.redbubble.util.metrics.StatsReceiver
 
 import scala.concurrent.duration.Duration
-import scalacache.ScalaCache
+import scalacache._
+import redis._
 import scalacache.serialization.InMemoryRepr
 
 object CacheOps {
@@ -28,6 +29,12 @@ object CacheOps {
         .recordStats(() => new StatsCounter(sanitiseCacheName(name), statsReceiver))
         .build[String, Object]
     ScalaCache(NonLoggingCaffeineCache(cache))
+  }
+
+  def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)(implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
+    val cache: Cache[Array[Byte]] = RedisCache(host, port)
+    Console.print(statsReceiver)
+    ScalaCache[Array[Byte]](cache = cache)
   }
 
   def sanitiseCacheName(n: String): String = n.replaceAll(" ", "_").toLowerCase
