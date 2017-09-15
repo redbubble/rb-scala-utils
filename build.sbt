@@ -72,6 +72,7 @@ lazy val nrVersion = "3.40.0"
 lazy val metricsVersion = "3.2.3"
 lazy val metricsNewRelicVersion = "1.1.1"
 lazy val specsVersion = "3.9.5"
+lazy val chillVersion = "0.9.2"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
@@ -107,5 +108,6 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
   "com.rollbar" % "rollbar" % rollbarVersion,
   "org.specs2" %% "specs2-core" % specsVersion % "test",
-  "org.specs2" %% "specs2-scalacheck" % specsVersion % "test"
+  "org.specs2" %% "specs2-scalacheck" % specsVersion % "test",
+  "com.twitter" %% "chill" % chillVersion
 )
