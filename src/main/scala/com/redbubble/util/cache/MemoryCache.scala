@@ -5,7 +5,7 @@ import java.util.concurrent.{Executor, TimeUnit}
 import com.redbubble.util.async.syntax._
 import com.redbubble.util.cache.CacheOps.sanitiseCacheName
 import com.redbubble.util.metrics.StatsReceiver
-import com.twitter.chill.MeatLocker
+import com.twitter.chill.Externalizer
 import com.twitter.util.{Duration, Future}
 
 import scala.concurrent.ExecutionContext.fromExecutor
@@ -106,10 +106,10 @@ final class RedisCache_(name: String, host: String, port: Int, ttl: Duration)(im
 }
 
 final class MyCodec[V] extends Codec[V, Array[Byte]] {
-  private val realCodec = GZippingJavaAnyBinaryCodec.default[MeatLocker[V]]
+  private val realCodec = GZippingJavaAnyBinaryCodec.default[Externalizer[V]]
 
   def serialize(value: V): Array[Byte] = {
-    val foo: MeatLocker[V] = MeatLocker(value)
+    val foo: Externalizer[V] = Externalizer(value)
     realCodec.serialize(foo)
   }
 
