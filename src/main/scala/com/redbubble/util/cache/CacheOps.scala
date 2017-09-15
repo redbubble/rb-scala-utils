@@ -33,7 +33,7 @@ object CacheOps {
 
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)(implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
     val cache: Cache[Array[Byte]] = RedisCache(host, port)
-    Console.print(statsReceiver)
+    // TODO: hook up the statsreceiver
     ScalaCache[Array[Byte]](cache = cache)
   }
 
