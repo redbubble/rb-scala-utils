@@ -3,11 +3,11 @@ package com.redbubble.util.cache
 import java.util.concurrent.Executor
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.redbubble.util.cache.redis.SimpleRedisCache
 import com.redbubble.util.metrics.StatsReceiver
 
 import scala.concurrent.duration.Duration
 import scalacache._
-import scalacache.redis._
 import scalacache.serialization.InMemoryRepr
 
 private[cache] object CacheOps {
@@ -22,23 +22,20 @@ private[cache] object CacheOps {
     */
   def newCache(name: String, maxSize: Long, ttl: Duration, executor: Executor)
       (implicit statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
-    val cache = Caffeine.newBuilder()
+    val underlying = Caffeine.newBuilder()
         .maximumSize(maxSize)
         .expireAfterWrite(ttl.length, ttl.unit)
         .executor(executor)
-        .recordStats(() => new StatsCounter(sanitiseCacheName(name), statsReceiver))
+        .recordStats(() => new StatsCounter(name, statsReceiver))
         .build[String, Object]
-    ScalaCache(NonLoggingCaffeineCache(cache))
+    ScalaCache(NonLoggingCaffeineCache(underlying))
   }
 
+  // TODO Make use of the TTL?
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)
       (implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
-    val cache: Cache[Array[Byte]] = RedisCache(host, port)
-    // TODO: hook up the statsreceiver. Might have to subclass & hook up using LoggingSupport
-    // TODO How do we close the cache?
-    // TODO Pass in the executor
-    // TODO Make use of the TTL?
-    ScalaCache[Array[Byte]](cache = cache)
+    val underlying = SimpleRedisCache(name, host, port)(executor, statsReceiver)
+    ScalaCache[Array[Byte]](cache = underlying)
   }
 
   def sanitiseCacheName(n: String): String = n.replaceAll(" ", "_").toLowerCase

@@ -15,10 +15,10 @@ import scalacache.{Flags, ScalaCache}
 
 object SimpleCache {
   def newMemoryCache(name: String, maxSize: Long, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
-    new MemoryCache_(name, maxSize, ttl)(ex, statsReceiver)
+    new MemoryCache_(sanitiseCacheName(name), maxSize, ttl)(ex, statsReceiver)
 
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
-    new RedisCache_(name, host, port, ttl)(ex, statsReceiver)
+    new RedisCache_(sanitiseCacheName(name), host, port, ttl)(ex, statsReceiver)
 }
 
 sealed trait SimpleCache {
@@ -47,13 +47,14 @@ sealed trait SimpleCache {
   def flush(): Future[Unit]
 }
 
-final class MemoryCache_(name: String, maxSize: Long, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
+private final class MemoryCache_(name: String, maxSize: Long, ttl: Duration)
+    (implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
   private val flags = Flags(readsEnabled = true, writesEnabled = true)
   private val scalaTtl = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
   private val cache: ScalaCache[InMemoryRepr] = CacheOps.newCache(name, maxSize, scalaTtl, ex)(statsReceiver)
   private val ec = fromExecutor(ex)
 
-  statsReceiver.scope(sanitiseCacheName(name)).addGauge("size")(estimatedSize.getOrElse(0L).toFloat)
+  statsReceiver.scope(name).addGauge("size")(estimatedSize.getOrElse(0L).toFloat)
 
   sys.addShutdownHook(cache.cache.close())
 
@@ -80,10 +81,11 @@ final class MemoryCache_(name: String, maxSize: Long, ttl: Duration)(implicit ex
   }
 }
 
-final class RedisCache_(name: String, host: String, port: Int, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
+private final class RedisCache_(name: String, host: String, port: Int, ttl: Duration)
+    (implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
   private val flags = Flags(readsEnabled = true, writesEnabled = true)
   private val scalaTtl = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
-  private val cache: ScalaCache[Array[Byte]] = CacheOps.newRedisCache(name, host, port, scalaTtl, ex)
+  private val cache = CacheOps.newRedisCache(name, host, port, scalaTtl, ex)
   private val ec = fromExecutor(ex)
 
   override def caching[V](key: CacheKey)(f: => Future[V]) = {
