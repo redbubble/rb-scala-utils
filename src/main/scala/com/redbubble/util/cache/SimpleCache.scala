@@ -80,7 +80,6 @@ final class MemoryCache_(name: String, maxSize: Long, ttl: Duration)(implicit ex
   }
 }
 
-
 final class RedisCache_(name: String, host: String, port: Int, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
   private val flags = Flags(readsEnabled = true, writesEnabled = true)
   private val scalaTtl = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
@@ -88,32 +87,34 @@ final class RedisCache_(name: String, host: String, port: Int, ttl: Duration)(im
   private val ec = fromExecutor(ex)
 
   override def caching[V](key: CacheKey)(f: => Future[V]) = {
-    val codec = new MyCodec[V]
+    val codec = new ScalaCacheExternaliserCodec[V]
     scalacache.cachingWithTTL[V, Array[Byte]](key)(scalaTtl)(f.asScala)(cache, flags, ec, codec).asTwitter(ec)
   }
 
   override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
-    val codec = new MyCodec[V]
+    val codec = new ScalaCacheExternaliserCodec[V]
     scalacache.put[V, Array[Byte]](key)(value, Some(scalaTtl))(cache, flags, codec).asTwitter(ec)
   }
 
   override def get[V](key: CacheKey) = {
-    val codec = new MyCodec[V]
+    val codec = new ScalaCacheExternaliserCodec[V]
     scalacache.get[V, Array[Byte]](key)(cache, flags, codec).asTwitter(ec)
   }
 
   override def flush() = cache.cache.removeAll().asTwitter(ec)
 }
 
-final class MyCodec[V] extends Codec[V, Array[Byte]] {
-  private val realCodec = GZippingJavaAnyBinaryCodec.default[Externalizer[V]]
+// TODO Can we memoise/cache any of these little objects we're creating?
+final class ScalaCacheExternaliserCodec[V] extends Codec[V, Array[Byte]] {
+  private val underlyingCodec = GZippingJavaAnyBinaryCodec.default[Externalizer[V]]
 
   def serialize(value: V): Array[Byte] = {
-    val foo: Externalizer[V] = Externalizer(value)
-    realCodec.serialize(foo)
+    val externalised: Externalizer[V] = Externalizer(value)
+    underlyingCodec.serialize(externalised)
   }
 
   def deserialize(data: Array[Byte]): V = {
-    realCodec.deserialize(data).get
+    val externalised: Externalizer[V] = underlyingCodec.deserialize(data)
+    externalised.get
   }
 }

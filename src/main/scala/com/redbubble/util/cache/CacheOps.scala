@@ -7,10 +7,10 @@ import com.redbubble.util.metrics.StatsReceiver
 
 import scala.concurrent.duration.Duration
 import scalacache._
-import redis._
+import scalacache.redis._
 import scalacache.serialization.InMemoryRepr
 
-object CacheOps {
+private[cache] object CacheOps {
   /**
     * Create a new in-memory cache, with metrics tracking.
     *
@@ -31,9 +31,13 @@ object CacheOps {
     ScalaCache(NonLoggingCaffeineCache(cache))
   }
 
-  def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)(implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
+  def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)
+      (implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
     val cache: Cache[Array[Byte]] = RedisCache(host, port)
-    // TODO: hook up the statsreceiver
+    // TODO: hook up the statsreceiver. Might have to subclass & hook up using LoggingSupport
+    // TODO How do we close the cache?
+    // TODO Pass in the executor
+    // TODO Make use of the TTL?
     ScalaCache[Array[Byte]](cache = cache)
   }
 
