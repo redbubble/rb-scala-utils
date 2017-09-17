@@ -1,4 +1,4 @@
-package com.redbubble.util.cache
+package com.redbubble.util.cache.memory
 
 import com.github.benmanes.caffeine.cache.Cache
 
