@@ -44,7 +44,7 @@ private[cache] object CacheOps {
     */
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration, executor: Executor)
       (implicit statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
-    // TODO Make use of the TTL?
+    // TODO Can we make use of the TTL?
     val underlying = MetricsEnableRedisCache(name, host, port)(executor, statsReceiver)
     ScalaCache[Array[Byte]](cache = underlying)
   }
