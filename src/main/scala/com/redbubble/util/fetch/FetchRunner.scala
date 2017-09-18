@@ -1,19 +1,24 @@
 package com.redbubble.util.fetch
 
+import cats.syntax.either._
 import com.redbubble.util.cache.{CacheKey, SimpleCache}
 import com.redbubble.util.fetch.TwitterFutureFetchMonadError.twitterFutureFetchMonadError
-import com.twitter.util.{Await, Duration, Future, FuturePool}
+import com.twitter.conversions.time._
+import com.twitter.util.{Await, Future, FuturePool, TimeoutException}
 import fetch._
 
 final case class FetchedObjectCache(underlyingCache: SimpleCache) extends DataSourceCache {
-  private val WaitTimeout = Duration.fromSeconds(5)
-
+  /**
+    * We rescue failures & timeouts from the underlying cache by returning None, which will cause a fetch from the
+    * datasource.
+    */
   override def get[A](k: DataSourceIdentity): Option[A] = {
-    // We rescue any failures from the underlying cache by returning None, which will cause a fetch from the datasource.
     val cacheGet = underlyingCache.get[A](CacheKey(k.toString)).rescue {
       case _ => Future.value(None)
     }
-    Await.result(cacheGet, WaitTimeout)
+    Either.catchOnly[TimeoutException] {
+      Await.result(cacheGet, timeout = 5.seconds)
+    }.getOrElse(None)
   }
 
   override def update[A](k: DataSourceIdentity, v: A): FetchedObjectCache = {
