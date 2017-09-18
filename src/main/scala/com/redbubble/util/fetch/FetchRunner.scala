@@ -7,7 +7,9 @@ import fetch._
 
 final case class FetchedObjectCache(underlying: SimpleCache) extends DataSourceCache {
   override def get[A](k: DataSourceIdentity) = {
-    val valueFuture = underlying.get[A](CacheKey(k.toString))
+    val valueFuture = underlying.get[A](CacheKey(k.toString)).rescue {
+      case _ => Future.value(None)
+    }
     Await.result(valueFuture)
   }
 
