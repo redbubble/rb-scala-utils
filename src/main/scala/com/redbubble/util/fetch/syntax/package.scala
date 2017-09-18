@@ -7,9 +7,9 @@ package object syntax {
 
   implicit final class RunnableFetch[T](fetch: Fetch[T]) {
     /**
-      * Runs this fetch as a `Future`, returning a `Future` containing the result.
+      * Runs this fetch using a `Future`, returning a `Future` containing the result.
       */
-    def runF(implicit runner: FetcherRunner): Future[T] = runner.runFetchF(fetch)
+    def runF(implicit runner: FetcherRunner): Future[T] = runner.runFetchAsFuture(fetch)
   }
 
 }

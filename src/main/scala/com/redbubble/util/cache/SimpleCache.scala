@@ -2,18 +2,19 @@ package com.redbubble.util.cache
 
 import java.util.concurrent.Executor
 
-import com.redbubble.util.cache.CacheOps.sanitiseCacheName
-import com.redbubble.util.cache.memory.MemorySimpleCache
+import com.redbubble.util.cache.memory.InMemorySimpleCache
 import com.redbubble.util.cache.redis.RedisSimpleCache
 import com.redbubble.util.metrics.StatsReceiver
 import com.twitter.util.{Duration, Future}
 
 object SimpleCache {
   def newMemoryCache(name: String, maxSize: Long, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
-    new MemorySimpleCache(sanitiseCacheName(name), maxSize, ttl)(ex, statsReceiver)
+    new InMemorySimpleCache(sanitiseCacheName(name), maxSize, ttl)(ex, statsReceiver)
 
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration)(implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
     new RedisSimpleCache(sanitiseCacheName(name), host, port, ttl)(ex, statsReceiver)
+
+  private def sanitiseCacheName(n: String): String = n.replaceAll(" ", "_").toLowerCase
 }
 
 /**

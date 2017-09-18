@@ -8,7 +8,7 @@ import com.twitter.conversions.time._
 import com.twitter.util.Future
 import org.specs2.mutable.Specification
 
-final class MemoryCacheSpec extends Specification with SpecHelper {
+final class InMemorySimpleCacheSpec extends Specification with SpecHelper {
   private lazy val statsReceiver = StatsReceiver.stats
 
   "An in-memory cache" >> {
