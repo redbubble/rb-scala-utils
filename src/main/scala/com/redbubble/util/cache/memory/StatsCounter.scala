@@ -1,9 +1,9 @@
-package com.redbubble.util.cache
+package com.redbubble.util.cache.memory
 
 import com.github.benmanes.caffeine.cache.stats.{CacheStats, StatsCounter => CaffeineStatsCounter}
 import com.redbubble.util.metrics.StatsReceiver
 
-//noinspection ScalaStyle
+//noinspection VarCouldBeVal
 final class StatsCounter(cacheId: String, statsReceiver: StatsReceiver) extends CaffeineStatsCounter {
   private var hitCount: Long = 0
   private var missCount: Long = 0

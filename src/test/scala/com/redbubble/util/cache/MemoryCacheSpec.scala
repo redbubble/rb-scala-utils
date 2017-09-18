@@ -21,7 +21,7 @@ final class MemoryCacheSpec extends Specification with SpecHelper {
         executed = executed + 1
       }
 
-      val cache = MemoryCache.newCache("test-cache", 100, 5.minutes)(newSingleThreadExecutor, statsReceiver)
+      val cache = SimpleCache.newMemoryCache("test-cache", 100, 5.minutes)(newSingleThreadExecutor, statsReceiver)
       cache.caching[Unit](CacheKey("some-key"))(mutate)
       cache.caching[Unit](CacheKey("some-key"))(mutate)
       cache.caching[Unit](CacheKey("some-key"))(mutate)

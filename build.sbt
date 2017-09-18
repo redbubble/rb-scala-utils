@@ -63,6 +63,7 @@ lazy val featherbedVersion = "0.3.1"
 lazy val jodaTimeVersion = "2.9.9"
 lazy val jodaConvertVersion = "1.8.2"
 lazy val scalaCacheVersion = "0.9.4"
+lazy val chillVersion = "0.9.2"
 lazy val scalaUriVersion = "0.4.16"
 lazy val fetchVersion = "0.6.2"
 lazy val slf4jVersion = "1.7.25"
@@ -100,6 +101,8 @@ libraryDependencies ++= Seq(
   "io.dropwizard.metrics" % "metrics-core" % metricsVersion,
   "com.palominolabs.metrics" % "metrics-new-relic" % metricsNewRelicVersion,
   "com.github.cb372" %% "scalacache-caffeine" % scalaCacheVersion,
+  "com.github.cb372" %% "scalacache-redis" % scalaCacheVersion,
+  "com.twitter" %% "chill" % chillVersion,
   "ch.qos.logback" % "logback-core" % logbackVersion,
   "ch.qos.logback" % "logback-classic" % logbackVersion,
   "org.slf4j" % "slf4j-api" % slf4jVersion,
