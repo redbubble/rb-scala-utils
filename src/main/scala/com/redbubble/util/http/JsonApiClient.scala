@@ -62,6 +62,18 @@ trait JsonApiClient {
   ): Future[(Either[ApiError, R], Response)]
 
   /**
+    * Perform a POST request for the given path with no payload.
+    *
+    * Requires:
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def post[R: CirceDecoder](
+      path: RelativePath,
+      queryString: Seq[QueryParam] = Seq.empty,
+      headers: Seq[HttpHeader] = Seq.empty
+  ): DownstreamResponse[R]
+
+  /**
     * Perform a POST request for the given path.
     *
     * Requires:
@@ -89,6 +101,19 @@ trait JsonApiClient {
       queryString: Seq[QueryParam] = Seq.empty,
       headers: Seq[HttpHeader] = Seq.empty
   )(implicit ce: CirceEncoder[C]): Future[(Either[ApiError, R], Response)]
+
+  /**
+    * Perform a POST request for the given path with no payload. Returns both the decoded response, as well as the raw
+    * HTTP response (for pulling out headers, etc.).
+    *
+    * Requires:
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def postZip[C, R: CirceDecoder](
+      path: RelativePath,
+      queryString: Seq[QueryParam] = Seq.empty,
+      headers: Seq[HttpHeader] = Seq.empty
+  ): Future[(Either[ApiError, R], Response)]
 }
 
 private final class JsonApiClient_(baseClient: featherbed.Client, userAgent: String,
