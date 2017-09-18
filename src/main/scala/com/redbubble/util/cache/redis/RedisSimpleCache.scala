@@ -45,7 +45,7 @@ private[cache] final class RedisSimpleCache(name: String, host: String, port: In
 
   override def flush(): Future[Unit] = cache.cache.removeAll().asTwitter(ec)
 
-  private def createCache(name: String, host: String, port: Int, executor: Executor, statsReceiver: StatsReceiver) = {
+  private def createCache(name: String, host: String, port: Int, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
     val underlying = MetricsEnableRedisCache(name, host, port)(executor, statsReceiver)
     val c = ScalaCache(
       cache = underlying,

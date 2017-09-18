@@ -47,7 +47,7 @@ private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl:
   override def flush(): Future[Unit] = cache.cache.removeAll().asTwitter(ec)
 
   private def createCache(
-      name: String, maxSize: Long, ttl: ScalaDuration, executor: Executor, statsReceiver: StatsReceiver) = {
+      name: String, maxSize: Long, ttl: ScalaDuration, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
     val underlying = Caffeine.newBuilder()
         .maximumSize(maxSize)
         .expireAfterWrite(ttl.length, ttl.unit)
