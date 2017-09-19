@@ -3,15 +3,12 @@ package com.redbubble.util.cache.memory
 import java.util.concurrent.{Executor, TimeUnit}
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.redbubble.util.async.syntax._
-import com.redbubble.util.cache.{CacheKey, SimpleCache}
+import com.redbubble.util.cache.{CacheKey, Caching, SimpleCache}
 import com.redbubble.util.metrics.StatsReceiver
 import com.twitter.util.{Duration, Future}
 
-import scala.concurrent.ExecutionContext.fromExecutor
-import scala.concurrent.duration.{Duration => ScalaDuration}
 import scalacache.serialization.{Codec, InMemoryRepr}
-import scalacache.{CacheConfig, Flags, ScalaCache}
+import scalacache.{CacheConfig, ScalaCache}
 
 /**
   * An in-memory cache, with metrics tracking.
@@ -24,33 +21,30 @@ import scalacache.{CacheConfig, Flags, ScalaCache}
   */
 private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl: Duration)
     (implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
-  private val flags = Flags(readsEnabled = true, writesEnabled = true)
-  private val scalaTtl = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
-  private val cache = createCache(name, maxSize, scalaTtl, ex, statsReceiver)
-  private val ec = fromExecutor(ex)
+  private val cache = createCache(name, maxSize, ex, statsReceiver)
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
-    val noOpCodec = Codec.anyToNoSerialization[V]
-    scalacache.cachingWithTTL[V, InMemoryRepr](key)(scalaTtl)(f.asScala)(cache, flags, ec, noOpCodec).asTwitter(ec)
+    val codec = Codec.anyToNoSerialization[V]
+    Caching.caching(cache, ttl, key, codec)(f)(ex)
   }
 
   override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
-    val noOpCodec = Codec.anyToNoSerialization[V]
-    scalacache.put[V, InMemoryRepr](key)(value, Some(scalaTtl))(cache, flags, noOpCodec).asTwitter(ec)
+    val codec = Codec.anyToNoSerialization[V]
+    Caching.put(cache, ttl, key, codec, value)(ex)
   }
 
   override def get[V](key: CacheKey): Future[Option[V]] = {
-    val noOpCodec = Codec.anyToNoSerialization[V]
-    scalacache.get[V, InMemoryRepr](key)(cache, flags, noOpCodec).asTwitter(ec)
+    val codec = Codec.anyToNoSerialization[V]
+    Caching.get(cache, key, codec)(ex)
   }
 
-  override def flush(): Future[Unit] = cache.cache.removeAll().asTwitter(ec)
+  override def flush(): Future[Unit] = Caching.flush(cache)(ex)
 
   private def createCache(
-      name: String, maxSize: Long, ttl: ScalaDuration, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
+      name: String, maxSize: Long, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
     val underlying = Caffeine.newBuilder()
         .maximumSize(maxSize)
-        .expireAfterWrite(ttl.length, ttl.unit)
+        .expireAfterWrite(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
         .executor(executor)
         .recordStats(() => new StatsCounter(name, statsReceiver))
         .build[String, Object]
