@@ -29,9 +29,8 @@ private[cache] object Caching {
     * @tparam Repr The type of the serialised/encoded form of the value, e.g. `InMemoryRepr` or `Array[Byte]`.
     * @return A Twitter `Future` with the result of `f`.
     */
-  def caching[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr])(f: => Future[V])(implicit ex: Executor): Future[V] = {
-    Caching.caching(cache, ttl, key, codec)(f)(ex)
-
+  def caching[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr])(f: => Future[V])
+      (implicit ex: Executor): Future[V] = {
     val ec = toEc(ex)
     val result = scalacache.cachingWithTTL(key)(toScalaTtl(ttl))(f.asScala)(cache, flags, ec, codec)
     result.asTwitter(ec)
@@ -50,7 +49,8 @@ private[cache] object Caching {
     * @tparam Repr The type of the serialised/encoded form of the value, e.g. `InMemoryRepr` or `Array[Byte]`.
     * @return A Twitter `Future` containing no result (you can use this to know when the value has been cached).
     */
-  def put[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr], value: V)(implicit ex: Executor): Future[Unit] = {
+  def put[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr], value: V)
+      (implicit ex: Executor): Future[Unit] = {
     val ec = toEc(ex)
     val result = scalacache.put(key)(value, Some(toScalaTtl(ttl)))(cache, flags, codec)
     result.asTwitter(ec)
@@ -67,7 +67,8 @@ private[cache] object Caching {
     * @tparam Repr The type of the serialised/encoded form of the value, e.g. `InMemoryRepr` or `Array[Byte]`.
     * @return A Twitter `Future` the value from the cache.
     */
-  def get[V, Repr](cache: ScalaCache[Repr], key: CacheKey, codec: Codec[V, Repr])(implicit ex: Executor): Future[Option[V]] = {
+  def get[V, Repr](cache: ScalaCache[Repr], key: CacheKey, codec: Codec[V, Repr])
+      (implicit ex: Executor): Future[Option[V]] = {
     val ec = toEc(ex)
     val result = scalacache.get(key)(cache, flags, codec)
     result.asTwitter(ec)
