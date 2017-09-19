@@ -18,7 +18,7 @@ You will need to add something like the following to your `build.sbt`:
 ```scala
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.1.1"
+libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.2.4"
 ```
 
 # Release
@@ -26,6 +26,7 @@ libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.1.1"
 For contributors, a cheat sheet to making a new release:
 
 ```shell
+$ ... update the README with the upcoming version
 $ git commit -m "New things" && git push
 $ git tag -a v0.0.3 -m "v0.0.3"
 $ git push --tags
