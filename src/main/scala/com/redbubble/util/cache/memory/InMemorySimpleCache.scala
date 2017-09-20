@@ -25,17 +25,17 @@ private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl:
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.caching(cache, ttl, key, codec)(f)(ex)
+    Caching.caching(cache, ttl, key, codec)(f)(ex, statsReceiver)
   }
 
   override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.put(cache, ttl, key, codec, value)(ex)
+    Caching.put(cache, ttl, key, codec, value)(ex, statsReceiver)
   }
 
   override def get[V](key: CacheKey): Future[Option[V]] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.get(cache, key, codec)(ex)
+    Caching.get(cache, key, codec)(ex, statsReceiver)
   }
 
   override def flush(): Future[Unit] = Caching.flush(cache)(ex)

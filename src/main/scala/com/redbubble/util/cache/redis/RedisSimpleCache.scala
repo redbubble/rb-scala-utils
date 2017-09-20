@@ -24,17 +24,17 @@ private[cache] final class RedisSimpleCache(name: String, host: String, port: In
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
     val codec = new ScalaCacheExternaliserCodec[V]
-    Caching.caching(cache, ttl, key, codec)(f)(ex)
+    Caching.caching(cache, ttl, key, codec)(f)(ex, statsReceiver)
   }
 
   override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
     val codec = new ScalaCacheExternaliserCodec[V]
-    Caching.put(cache, ttl, key, codec, value)(ex)
+    Caching.put(cache, ttl, key, codec, value)(ex, statsReceiver)
   }
 
   override def get[V](key: CacheKey): Future[Option[V]] = {
     val codec = new ScalaCacheExternaliserCodec[V]
-    Caching.get(cache, key, codec)(ex)
+    Caching.get(cache, key, codec)(ex, statsReceiver)
   }
 
   override def flush(): Future[Unit] = Caching.flush(cache)
