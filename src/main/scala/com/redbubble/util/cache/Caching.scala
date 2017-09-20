@@ -3,12 +3,15 @@ package com.redbubble.util.cache
 import java.util.concurrent.{Executor, TimeUnit}
 
 import com.redbubble.util.async.syntax._
+import com.redbubble.util.metrics.StatsReceiver
+import com.twitter.finagle.stats.Stat
 import com.twitter.util.{Duration, Future}
 
 import scala.concurrent.ExecutionContext.fromExecutor
 import scala.concurrent.duration.{Duration => ScalaDuration}
 import scalacache.serialization.Codec
 import scalacache.{Flags, ScalaCache}
+import scala.reflect.runtime.universe.typeOf
 
 /**
   * Common implementations of the underlying caching mechanics, transforming of isomorphic types, etc.
@@ -30,10 +33,11 @@ private[cache] object Caching {
     * @return A Twitter `Future` with the result of `f`.
     */
   def caching[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr])(f: => Future[V])
-      (implicit ex: Executor): Future[V] = {
+      (implicit ex: Executor, statsReceiver: StatsReceiver): Future[V] = {
     val ec = toEc(ex)
-    val result = scalacache.cachingWithTTL(key)(toScalaTtl(ttl))(f.asScala)(cache, flags, ec, codec)
-    result.asTwitter(ec)
+    recordExecutionTime("caching") {
+      scalacache.cachingWithTTL(key)(toScalaTtl(ttl))(f.asScala)(cache, flags, ec, codec).asTwitter(ec)
+    }
   }
 
   /**
@@ -50,10 +54,11 @@ private[cache] object Caching {
     * @return A Twitter `Future` containing no result (you can use this to know when the value has been cached).
     */
   def put[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr], value: V)
-      (implicit ex: Executor): Future[Unit] = {
+      (implicit ex: Executor, statsReceiver: StatsReceiver): Future[Unit] = {
     val ec = toEc(ex)
-    val result = scalacache.put(key)(value, Some(toScalaTtl(ttl)))(cache, flags, codec)
-    result.asTwitter(ec)
+    recordExecutionTime("put") {
+      scalacache.put(key)(value, Some(toScalaTtl(ttl)))(cache, flags, codec).asTwitter(ec)
+    }
   }
 
   /**
@@ -68,10 +73,11 @@ private[cache] object Caching {
     * @return A Twitter `Future` the value from the cache.
     */
   def get[V, Repr](cache: ScalaCache[Repr], key: CacheKey, codec: Codec[V, Repr])
-      (implicit ex: Executor): Future[Option[V]] = {
+      (implicit ex: Executor, statsReceiver: StatsReceiver): Future[Option[V]] = {
     val ec = toEc(ex)
-    val result = scalacache.get(key)(cache, flags, codec)
-    result.asTwitter(ec)
+    recordExecutionTime("get") {
+      scalacache.get(key)(cache, flags, codec).asTwitter(ec)
+    }
   }
 
   /**
@@ -83,4 +89,10 @@ private[cache] object Caching {
   private def toEc(ex: Executor) = fromExecutor(ex)
 
   private def toScalaTtl(ttl: Duration): ScalaDuration = ScalaDuration(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
+
+  private def recordExecutionTime[A](name: String)(f: Future[A])(implicit statsReceiver: StatsReceiver): Future[A] = {
+    val stats = statsReceiver.scope("cache", name)
+    val typeName: String = typeOf[A].typeSymbol.name.toString
+    Stat.timeFuture(stats.stat("execution_time", typeName))(f)
+  }
 }
