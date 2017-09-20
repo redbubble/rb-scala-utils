@@ -2,6 +2,7 @@ package com.redbubble.util.cache.redis
 
 import java.util.concurrent.Executor
 
+import com.redbubble.util.config.ConfigUtils
 import com.redbubble.util.metrics.StatsReceiver
 import redis.clients.jedis._
 
@@ -10,8 +11,17 @@ import scala.concurrent.duration.Duration
 import scalacache.redis.RedisCache
 
 object MetricsEnableRedisCache {
-  def apply(name: String, host: String, port: Int)(implicit executor: Executor, statsReceiver: StatsReceiver): RedisCache =
-    new MetricsEnableRedisCache_(name, new JedisPool(host, port))(executor, statsReceiver)
+  def apply(name: String, host: String, port: Int)(implicit executor: Executor, statsReceiver: StatsReceiver): RedisCache = {
+    val poolConfig = new JedisPoolConfig()
+    val poolSize = ConfigUtils.envVar("JEDIS_POOL_SIZE") match {
+      case Some(s) => s.toInt
+      case _ => 100
+    }
+    poolConfig.setMaxTotal(poolSize)
+    val connectionPool = new JedisPool(poolConfig, host, port)
+    new MetricsEnableRedisCache_(name, connectionPool)(executor, statsReceiver)
+  }
+
 }
 
 /**
