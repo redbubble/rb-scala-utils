@@ -19,9 +19,10 @@ import scalacache.{CacheConfig, ScalaCache}
   * @param statsReceiver Where to log metrics to on the cache behaviour. Metrics are scoped by `name`.
   */
 private[cache] final class RedisSimpleCache(name: String, host: String, port: Int, ttl: Duration)
-    (implicit override val executor: Executor, statsReceiver: StatsReceiver) extends SimpleCache[Array[Byte]] {
+    (implicit override val executor: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
 
-  override protected val underlying: ScalaCache[Array[Byte]] = createCache(name, host, port, executor, statsReceiver)
+  override protected type Repr = Array[Byte]
+  override protected val underlying: ScalaCache[Repr] = createCache(name, host, port, executor, statsReceiver)
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
     val codec = new ScalaCacheExternaliserCodec[V]
@@ -38,7 +39,7 @@ private[cache] final class RedisSimpleCache(name: String, host: String, port: In
     Caching.get(underlying, key, codec)(executor)
   }
 
-  private def createCache(name: String, host: String, port: Int, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
+  private def createCache(name: String, host: String, port: Int, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[Repr] = {
     val underlying = MetricsEnableRedisCache(name, host, port)(executor, statsReceiver)
     val c = ScalaCache(
       cache = underlying,

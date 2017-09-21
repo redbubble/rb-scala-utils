@@ -8,15 +8,14 @@ import com.redbubble.util.metrics.StatsReceiver
 import com.twitter.util.{Duration, Future}
 
 import scalacache.ScalaCache
-import scalacache.serialization.InMemoryRepr
 
 object SimpleCache {
   def newMemoryCache(name: String, maxSize: Long, ttl: Duration)
-      (implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache[InMemoryRepr] =
+      (implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
     new InMemorySimpleCache(sanitiseCacheName(name), maxSize, ttl)(ex, statsReceiver)
 
   def newRedisCache(name: String, host: String, port: Int, ttl: Duration)
-      (implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache[Array[Byte]] =
+      (implicit ex: Executor, statsReceiver: StatsReceiver): SimpleCache =
     new RedisSimpleCache(sanitiseCacheName(name), host, port, ttl)(ex, statsReceiver)
 
   private def sanitiseCacheName(n: String): String = n.replaceAll(" ", "_").toLowerCase
@@ -25,7 +24,8 @@ object SimpleCache {
 /**
   * A simple, asynchronous caching facade.
   */
-trait SimpleCache[Repr] {
+trait SimpleCache {
+  protected type Repr
   protected implicit val executor: Executor
   protected val underlying: ScalaCache[Repr]
 

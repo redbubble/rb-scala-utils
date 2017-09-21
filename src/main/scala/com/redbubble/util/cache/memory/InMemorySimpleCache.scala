@@ -20,9 +20,10 @@ import scalacache.{CacheConfig, ScalaCache}
   * @param statsReceiver Where to log metrics to on the cache behaviour. Metrics are scoped by `name`.
   */
 private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl: Duration)
-    (implicit override val executor: Executor, statsReceiver: StatsReceiver) extends SimpleCache[InMemoryRepr] {
+    (implicit override val executor: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
 
-  override protected val underlying: ScalaCache[InMemoryRepr] = createCache(name, maxSize, executor, statsReceiver)
+  override protected type Repr = InMemoryRepr
+  override protected val underlying: ScalaCache[Repr] = createCache(name, maxSize, executor, statsReceiver)
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
     val codec = Codec.anyToNoSerialization[V]
@@ -40,7 +41,7 @@ private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl:
   }
 
   private def createCache(
-      name: String, maxSize: Long, ex: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
+      name: String, maxSize: Long, ex: Executor, statsReceiver: StatsReceiver): ScalaCache[Repr] = {
     val underlying = Caffeine.newBuilder()
         .maximumSize(maxSize)
         .expireAfterWrite(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
