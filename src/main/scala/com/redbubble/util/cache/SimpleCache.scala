@@ -41,6 +41,11 @@ trait SimpleCache {
   def get[V](key: CacheKey): Future[Option[V]]
 
   /**
+    * Manually remove an entry from the cache.
+    */
+  def remove(key: CacheKey): Future[Unit]
+
+  /**
     * Flush (clear) the cache of all entries.
     */
   def flush(): Future[Unit]

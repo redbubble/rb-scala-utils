@@ -38,14 +38,16 @@ private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl:
     Caching.get(cache, key, codec)(ex)
   }
 
+  override def remove(key: CacheKey): Future[Unit] = Caching.remove(cache, key)(ex)
+
   override def flush(): Future[Unit] = Caching.flush(cache)(ex)
 
   private def createCache(
-      name: String, maxSize: Long, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
+      name: String, maxSize: Long, ex: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
     val underlying = Caffeine.newBuilder()
         .maximumSize(maxSize)
         .expireAfterWrite(ttl.inNanoseconds, TimeUnit.NANOSECONDS)
-        .executor(executor)
+        .executor(ex)
         .recordStats(() => new StatsCounter(name, statsReceiver))
         .build[String, Object]
     statsReceiver.scope(name).addGauge("size")(underlying.estimatedSize().toFloat)

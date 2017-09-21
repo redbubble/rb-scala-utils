@@ -37,10 +37,12 @@ private[cache] final class RedisSimpleCache(name: String, host: String, port: In
     Caching.get(cache, key, codec)(ex)
   }
 
-  override def flush(): Future[Unit] = Caching.flush(cache)
+  override def remove(key: CacheKey): Future[Unit] = Caching.remove(cache, key)(ex)
 
-  private def createCache(name: String, host: String, port: Int, executor: Executor, statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
-    val underlying = MetricsEnableRedisCache(name, host, port)(executor, statsReceiver)
+  override def flush(): Future[Unit] = Caching.flush(cache)(ex)
+
+  private def createCache(name: String, host: String, port: Int, ex: Executor, statsReceiver: StatsReceiver): ScalaCache[Array[Byte]] = {
+    val underlying = MetricsEnableRedisCache(name, host, port)(ex, statsReceiver)
     val c = ScalaCache(
       cache = underlying,
       cacheConfig = CacheConfig(Some(name))
