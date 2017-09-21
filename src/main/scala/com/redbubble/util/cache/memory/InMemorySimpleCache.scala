@@ -16,31 +16,28 @@ import scalacache.{CacheConfig, ScalaCache}
   * @param name          The name of the cache, used for sending metrics with the cache name.
   * @param maxSize       The maximum number of entries the cache should hold.
   * @param ttl           The time to live for items in the cache.
-  * @param ex            The executor to use when performing async cache operations.
+  * @param executor      The executor to use when performing async cache operations.
   * @param statsReceiver Where to log metrics to on the cache behaviour. Metrics are scoped by `name`.
   */
 private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl: Duration)
-    (implicit ex: Executor, statsReceiver: StatsReceiver) extends SimpleCache {
-  private val cache = createCache(name, maxSize, ex, statsReceiver)
+    (implicit override val executor: Executor, statsReceiver: StatsReceiver) extends SimpleCache[InMemoryRepr] {
+
+  override protected val underlying: ScalaCache[InMemoryRepr] = createCache(name, maxSize, executor, statsReceiver)
 
   override def caching[V](key: CacheKey)(f: => Future[V]): Future[V] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.caching(cache, ttl, key, codec)(f)(ex)
+    Caching.caching(underlying, ttl, key, codec)(f)(executor)
   }
 
-  override def put[V, Repr](key: CacheKey, value: V): Future[Unit] = {
+  override def put[V](key: CacheKey, value: V): Future[Unit] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.put(cache, ttl, key, codec, value)(ex)
+    Caching.put(underlying, ttl, key, codec, value)(executor)
   }
 
   override def get[V](key: CacheKey): Future[Option[V]] = {
     val codec = Codec.anyToNoSerialization[V]
-    Caching.get(cache, key, codec)(ex)
+    Caching.get(underlying, key, codec)(executor)
   }
-
-  override def remove(key: CacheKey): Future[Unit] = Caching.remove(cache, key)(ex)
-
-  override def flush(): Future[Unit] = Caching.flush(cache)(ex)
 
   private def createCache(
       name: String, maxSize: Long, ex: Executor, statsReceiver: StatsReceiver): ScalaCache[InMemoryRepr] = {
