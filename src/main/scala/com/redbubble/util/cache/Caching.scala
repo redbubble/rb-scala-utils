@@ -75,6 +75,18 @@ private[cache] object Caching {
   }
 
   /**
+    * Manually remove an entry from the cache.
+    *
+    * @param cache The underlying cache.
+    * @param key   The key to use to cache the value.
+    * @param ex    The executor to use to run any asynchronous operations.
+    * @tparam Repr The type of the serialised/encoded form of the value, e.g. `InMemoryRepr` or `Array[Byte]`.
+    * @return A Twitter `Future` the value from the cache.
+    */
+  def remove[Repr](cache: ScalaCache[Repr], key: CacheKey)(implicit ex: Executor): Future[Unit] =
+    cache.cache.remove(key).asTwitter(toEc(ex))
+
+  /**
     * Flush (clear) the cache of all entries.
     */
   def flush[Repr](cache: ScalaCache[Repr])(implicit ex: Executor): Future[Unit] =
