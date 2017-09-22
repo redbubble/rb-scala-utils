@@ -8,11 +8,13 @@ import com.twitter.util.{Await, Future, FuturePool}
 import fetch._
 
 final case class FetchedObjectCache(underlyingCache: SimpleCache) extends DataSourceCache {
+  private val DefaultCacheReadTimeout = 5.seconds
+
   override def get[A](k: DataSourceIdentity): Option[A] = {
     // Failures & timeouts from the underlying cache return None, causing a fetch from the datasource.
     val result = Either.catchNonFatal {
       val cacheGetFuture = underlyingCache.get[A](CacheKey(k.toString))
-      Await.result(cacheGetFuture, timeout = 5.seconds)
+      Await.result(cacheGetFuture, timeout = DefaultCacheReadTimeout)
     }
     result.getOrElse(None)
   }
