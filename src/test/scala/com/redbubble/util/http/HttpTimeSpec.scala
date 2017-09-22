@@ -14,7 +14,7 @@ final class HttpTimeSpec extends Specification with SpecHelper {
 
     "Calling across multiple seconds gives different results" >> {
       val time1 = currentTime()
-      Thread.sleep(1000L)
+      Thread.sleep(1500L)
       val time2 = currentTime()
       time1 must not(beEqualTo(time2))
     }
