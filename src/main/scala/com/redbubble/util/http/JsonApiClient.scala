@@ -9,16 +9,38 @@ import com.redbubble.util.metrics.StatsReceiver
 import com.twitter.finagle.http.Response
 import com.twitter.util.Future
 import io.circe.syntax._
-import io.circe.{Decoder => CirceDecoder, Encoder => CirceEncoder}
+import io.circe.{DecodingFailure, HCursor, Decoder => CirceDecoder, Encoder => CirceEncoder}
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names._
 
 object JsonApiClient {
+
+  // { "error": "example message" }
+  def extractSingleError(c: HCursor): Option[String] =
+    c.downField("error").as[String] match {
+      case Right(msg) => Some(msg)
+      case _ => None
+    }
+
+  // { "errors": [ { "code": "blah" }, { "code": "message 2" } ] }
+  def extractSeveralErrors(c: HCursor): Option[String] =
+    c.downField("errors").as[List[Map[String,String]]] match {
+      case Right(errorList) => Some(errorList.map{ m => m.getOrElse("code", "Unknown error code") }.mkString("; "))
+      case _ => None
+    }
+
   final def errorDecoder(url: URL, headers: Seq[HttpHeader],
       body: Option[String], response: Option[Response]): CirceDecoder[Throwable] = CirceDecoder.instance { c =>
-    c.downField("error").as[Option[String]].map { (error: Option[String]) =>
-      val message = error.fold("Error talking to downstream service")(message => s"Error talking to downstream service: $message")
-      Errors.downstreamError(new Exception(message), interaction(url, headers, None, response))
-    }
+    val multiError = extractSeveralErrors(c)
+    val singleError = extractSingleError(c)
+
+    val msg = if (singleError.nonEmpty) singleError.get
+    else if (multiError.nonEmpty) multiError.get
+    else "Error talking to downstream service"
+
+    Right[DecodingFailure, ApiError](
+      Errors.downstreamError(new Exception(msg), interaction(url, headers, None, response))
+    )
+
   }
 
   def client(baseClient: featherbed.Client, userAgent: String, metricsId: String)(
