@@ -22,10 +22,10 @@ object JsonApiClient {
     }
 
   // { "errors": [ { "code": "blah" }, { "code": "message 2" } ] }
-  def extractSeveralErrors(c: HCursor): Option[String] =
+  def extractSeveralErrors(c: HCursor): List[String] =
     c.downField("errors").as[List[Map[String,String]]] match {
-      case Right(errorList) => Some(errorList.map{ m => m.getOrElse("code", "Unknown error code") }.mkString("; "))
-      case _ => None
+      case Right(errorList) => errorList.map{ m => m.getOrElse("code", "UnknownErrorCode") }
+      case _ => List()
     }
 
   final def errorDecoder(url: URL, headers: Seq[HttpHeader],
@@ -33,14 +33,16 @@ object JsonApiClient {
     val multiError = extractSeveralErrors(c)
     val singleError = extractSingleError(c)
 
-    val msg = if (singleError.nonEmpty) singleError.get
-    else if (multiError.nonEmpty) multiError.get
-    else "Error talking to downstream service"
-
-    Right[DecodingFailure, ApiError](
-      Errors.downstreamError(new Exception(msg), interaction(url, headers, None, response))
+    val singleErrorResult = singleError.map(s =>
+      Errors.downstreamError(new Exception(s), interaction(url, headers, None, response))
     )
 
+    val someSortOfError = singleErrorResult match {
+      case Some(err) => err
+      case None => GenericMultipleErrors(multiError)
+    }
+
+    Right[DecodingFailure, ApiError](someSortOfError)
   }
 
   def client(baseClient: featherbed.Client, userAgent: String, metricsId: String)(

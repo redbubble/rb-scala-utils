@@ -18,6 +18,11 @@ final case class JsonDecodeFailedError(message: String, cause: Option[Throwable]
 
 final case class NotFoundError(message: String, cause: Option[Throwable] = None) extends ApiError_(message, cause)
 
+final case class GenericMultipleErrors(errors: List[String]) extends ApiError {
+  override def getMessage = errors.mkString("; ")
+  override def getCause = new Throwable(getMessage)
+}
+
 final case class DownstreamError(underlying: Throwable, interaction: ServiceInteraction) extends ApiError {
   override def getMessage = Option(underlying).map { t =>
     Option(t.getMessage).getOrElse(t.getClass.getName)
