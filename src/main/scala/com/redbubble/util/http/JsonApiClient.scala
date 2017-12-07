@@ -34,13 +34,13 @@ object JsonApiClient {
     val singleError = extractSingleError(c)
 
     val singleErrorResult = singleError.map(s =>
-      Errors.downstreamError(new Exception(s), interaction(url, headers, None, response))
+      new GenericError(s, None)
     )
 
     val someSortOfError = singleErrorResult match {
       case Some(err) => err
-      case None if multiError.nonEmpty => Errors.downstreamError(GenericMultipleErrors(s"Multiple errors returned downstream", None, multiError), interaction(url, headers, None, response))
-      case None => Errors.downstreamError(new Exception(s"Unknown downstream error"), interaction(url, headers, None, response))
+      case None if multiError.nonEmpty => GenericMultipleErrors(s"Multiple errors returned downstream", None, multiError)
+      case None => new GenericError(s"Unknown downstream error", None)
     }
 
     Right[DecodingFailure, ApiError](someSortOfError)
