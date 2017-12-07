@@ -101,7 +101,7 @@ trait JsonApiClient {
   ): Future[(Either[ApiError, R], Response)]
 
   /**
-    * Perform a POST request for the given path. Returns both the decoded response, as well as the raw HTTP response
+    * Perform a PUT request for the given path. Returns both the decoded response, as well as the raw HTTP response
     * (for pulling out headers, etc.).
     *
     * Requires:
@@ -114,6 +114,62 @@ trait JsonApiClient {
       queryString: Seq[QueryParam] = Seq.empty,
       headers: Seq[HttpHeader] = Seq.empty
   )(implicit ce: CirceEncoder[C]): Future[(Either[ApiError, R], Response)]
+
+  /**
+    * Perform a PUT request for the given path with no payload.
+    *
+    * Requires:
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def emptyPut[R: CirceDecoder](
+                                  path: RelativePath,
+                                  queryString: Seq[QueryParam] = Seq.empty,
+                                  headers: Seq[HttpHeader] = Seq.empty
+                                ): DownstreamResponse[R]
+
+  /**
+    * Perform a PUT request for the given path.
+    *
+    * Requires:
+    * - a Circe encoder, in implicit scope for the content, of type `C`.
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def put[C: CirceEncoder, R: CirceDecoder](
+                                              path: RelativePath,
+                                              content: C,
+                                              queryString: Seq[QueryParam] = Seq.empty,
+                                              headers: Seq[HttpHeader] = Seq.empty
+                                            ): DownstreamResponse[R]
+
+  /**
+    * Perform a PUT request for the given path with no payload. Returns both the decoded response, as well as the raw
+    * HTTP response (for pulling out headers, etc.).
+    *
+    * Requires:
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def emptyPutZip[R: CirceDecoder](
+                                     path: RelativePath,
+                                     queryString: Seq[QueryParam] = Seq.empty,
+                                     headers: Seq[HttpHeader] = Seq.empty
+                                   ): Future[(Either[ApiError, R], Response)]
+
+  /**
+    * Perform a PUT request for the given path. Returns both the decoded response, as well as the raw HTTP response
+    * (for pulling out headers, etc.).
+    *
+    * Requires:
+    * - a Circe encoder, in implicit scope for the content, of type `C`.
+    * - a Circe decoder, in implicit scope for the response type `R`.
+    */
+  def putZip[C, R: CirceDecoder](
+                                   path: RelativePath,
+                                   content: C,
+                                   queryString: Seq[QueryParam] = Seq.empty,
+                                   headers: Seq[HttpHeader] = Seq.empty
+                                 )(implicit ce: CirceEncoder[C]): Future[(Either[ApiError, R], Response)]
+
+
 }
 
 private final class JsonApiClient_(baseClient: featherbed.Client, userAgent: String,
@@ -167,6 +223,45 @@ private final class JsonApiClient_(baseClient: featherbed.Client, userAgent: Str
         .withContent(content, "application/json")
         .accept("application/json")
     logger.trace(s"POST to ${request.url} with headers: ${request.headers} & content: ${content.asJson}")
+
+    val encodedContent = jsonToString(ce(content))
+
+    implicit val contentEncoder = featherbed.circe.circeEncoder
+    implicit val successDecoder = featherbed.circe.circeDecoder
+    implicit val errorDecoder = featherbed.circe.circeDecoder(
+      JsonApiClient.errorDecoder(request.url, headers, Some(encodedContent), None)
+    )
+
+    val handledResponse = request.sendZip[Throwable, R]().map { responseTuple =>
+      val i = interaction(request.url, headers, Some(encodedContent), Some(responseTuple._2))
+      handleValidResponse(responseTuple, i)
+    }
+    handledResponse.rescue(handleInvalidResponse(HttpRequest(request.url, headers, Some(encodedContent))))
+  }
+
+  override def emptyPut[R: CirceDecoder](path: RelativePath, queryString: Seq[QueryParam], headers: Seq[HttpHeader]) =
+    emptyPutZip[R](path, queryString, headers).map(_._1)
+
+  override def put[C: CirceEncoder, R: CirceDecoder](
+                                                       path: RelativePath, content: C, queryString: Seq[QueryParam], headers: Seq[HttpHeader]) =
+    putZip[C, R](path, content, queryString, headers).map(_._1)
+
+  // Note. Featherbed doesn't really support the notion of no content, so we simulate it by sending an empty payload
+  override def emptyPutZip[R: CirceDecoder](path: RelativePath, queryString: Seq[QueryParam], headers: Seq[HttpHeader]) = {
+    implicit val emptyStringEncoder: CirceEncoder[String] = CirceEncoder.encodeString
+    putZip(path, "", queryString, headers)
+  }
+
+  override def putZip[C, R: CirceDecoder](path: RelativePath,
+                                           content: C, queryString: Seq[QueryParam], headers: Seq[HttpHeader])(implicit ce: CirceEncoder[C]) = {
+
+    val request = baseClient.put(path.path)
+      .withQueryParams(queryString.toList)
+      .withHeaders(USER_AGENT -> userAgent)
+      .withHeaders(headers: _*)
+      .withContent(content, "application/json")
+      .accept("application/json")
+    logger.trace(s"PUT to ${request.url} with headers: ${request.headers} & content: ${content.asJson}")
 
     val encodedContent = jsonToString(ce(content))
 
