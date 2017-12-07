@@ -39,7 +39,7 @@ object JsonApiClient {
 
     val someSortOfError = singleErrorResult match {
       case Some(err) => err
-      case None => GenericMultipleErrors(multiError)
+      case None => Errors.downstreamError(GenericMultipleErrors(s"Multiple errors returned downstream", None, multiError), interaction(url, headers, None, response))
     }
 
     Right[DecodingFailure, ApiError](someSortOfError)
