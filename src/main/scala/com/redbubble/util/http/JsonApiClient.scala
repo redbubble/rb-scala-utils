@@ -9,16 +9,41 @@ import com.redbubble.util.metrics.StatsReceiver
 import com.twitter.finagle.http.Response
 import com.twitter.util.Future
 import io.circe.syntax._
-import io.circe.{Decoder => CirceDecoder, Encoder => CirceEncoder}
+import io.circe.{DecodingFailure, HCursor, Decoder => CirceDecoder, Encoder => CirceEncoder}
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names._
 
 object JsonApiClient {
+
+  // { "error": "example message" }
+  def extractSingleError(c: HCursor): Option[String] =
+    c.downField("error").as[String] match {
+      case Right(msg) => Some(msg)
+      case _ => None
+    }
+
+  // { "errors": [ { "code": "blah" }, { "code": "message 2" } ] }
+  def extractSeveralErrors(c: HCursor): List[String] =
+    c.downField("errors").as[List[Map[String,String]]] match {
+      case Right(errorList) => errorList.map{ m => m.getOrElse("code", "UnknownErrorCode") }
+      case _ => List()
+    }
+
   final def errorDecoder(url: URL, headers: Seq[HttpHeader],
       body: Option[String], response: Option[Response]): CirceDecoder[Throwable] = CirceDecoder.instance { c =>
-    c.downField("error").as[Option[String]].map { (error: Option[String]) =>
-      val message = error.fold("Error talking to downstream service")(message => s"Error talking to downstream service: $message")
-      Errors.downstreamError(new Exception(message), interaction(url, headers, None, response))
+    val multiError = extractSeveralErrors(c)
+    val singleError = extractSingleError(c)
+
+    val singleErrorResult = singleError.map(s =>
+      Errors.downstreamError(new Exception(s), interaction(url, headers, None, response))
+    )
+
+    val someSortOfError = singleErrorResult match {
+      case Some(err) => err
+      case None if multiError.nonEmpty => Errors.downstreamError(GenericMultipleErrors(s"Multiple errors returned downstream", None, multiError), interaction(url, headers, None, response))
+      case None => Errors.downstreamError(new Exception(s"Unknown downstream error"), interaction(url, headers, None, response))
     }
+
+    Right[DecodingFailure, ApiError](someSortOfError)
   }
 
   def client(baseClient: featherbed.Client, userAgent: String, metricsId: String)(

@@ -8,6 +8,7 @@ abstract class ApiError_(message: String, cause: Option[Throwable]) extends ApiE
   override def getMessage = message
 
   override def getCause = cause.orNull
+
 }
 
 final case class AuthenticationFailedError(message: String, cause: Option[Throwable] = None) extends ApiError_(message, cause)
@@ -17,6 +18,8 @@ final case class GenericError(message: String, cause: Option[Throwable]) extends
 final case class JsonDecodeFailedError(message: String, cause: Option[Throwable] = None) extends ApiError_(message, cause)
 
 final case class NotFoundError(message: String, cause: Option[Throwable] = None) extends ApiError_(message, cause)
+
+final case class GenericMultipleErrors(message: String, cause: Option[Throwable] = None, errors: List[String]) extends ApiError_(message, cause)
 
 final case class DownstreamError(underlying: Throwable, interaction: ServiceInteraction) extends ApiError {
   override def getMessage = Option(underlying).map { t =>
