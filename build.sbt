@@ -2,6 +2,8 @@ organization := "com.redbubble"
 
 name := "rb-scala-utils"
 
+scalaVersion := "2.12.4"
+
 enablePlugins(GitVersioning, GitBranchPrompt)
 
 git.useGitDescribe := true
@@ -47,32 +49,32 @@ resolvers ++= Seq(
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
-lazy val catsVersion = "0.9.0"
+lazy val catsVersion = "1.0.1"
 lazy val mouseVersion = "0.9"
-lazy val circeVersion = "0.8.0"
+lazy val circeVersion = "0.9.0"
 // The version numbers for Finagle, Twitter, Finch & Catbird *must* work together. See the Finch build.sbt for known good versions.
-lazy val finchVersion = "0.15.1"
-lazy val finagleVersion = "6.45.0"
+lazy val finchVersion = "0.16.0"
+lazy val finagleVersion = "17.12.0"
 lazy val finagleHttpAuthVersion = "0.1.0"
 lazy val twitterServerVersion = "1.30.0"
-lazy val catBirdVersion = "0.15.0"
-lazy val sangriaVersion = "1.3.0"
-lazy val sangriaCirceVersion = "1.1.0"
+lazy val catBirdVersion = "17.12.0"
+lazy val sangriaVersion = "1.3.3"
+lazy val sangriaCirceVersion = "1.1.1"
 lazy val scalaJava8CompatVersion = "0.8.0"
-lazy val featherbedVersion = "0.3.1"
+lazy val featherbedVersion = "0.3.2"
 lazy val jodaTimeVersion = "2.9.9"
-lazy val jodaConvertVersion = "1.8.2"
-lazy val scalaCacheVersion = "0.9.4"
+lazy val jodaConvertVersion = "1.9.2"
+lazy val scalaCacheVersion = "0.10.0"
 lazy val chillVersion = "0.9.2"
 lazy val scalaUriVersion = "0.4.16"
-lazy val fetchVersion = "0.6.2"
+lazy val fetchVersion = "0.7.1"
 lazy val slf4jVersion = "1.7.25"
 lazy val logbackVersion = "1.2.3"
 lazy val rollbarVersion = "0.5.4"
 lazy val nrVersion = "3.40.0"
-lazy val metricsVersion = "3.2.3"
+lazy val metricsVersion = "4.0.0"
 lazy val metricsNewRelicVersion = "1.1.1"
-lazy val specsVersion = "3.9.5"
+lazy val specsVersion = "4.0.2"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,

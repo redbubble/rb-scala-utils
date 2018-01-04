@@ -30,7 +30,7 @@ private[cache] final class InMemorySimpleCache(name: String, maxSize: Long, ttl:
     Caching.caching(underlying, ttl, key, codec)(f)(executor)
   }
 
-  override def put[V](key: CacheKey, value: V): Future[Unit] = {
+  override def put[V](key: CacheKey, value: V): Future[Any] = {
     val codec = Codec.anyToNoSerialization[V]
     Caching.put(underlying, ttl, key, codec, value)(executor)
   }

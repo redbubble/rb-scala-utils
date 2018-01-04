@@ -7,7 +7,7 @@ import com.twitter.io.Buf
 import io.circe.{Json, Printer}
 
 trait JsonPrinter {
-  private val printer = Printer.noSpaces.copy(dropNullKeys = true)
+  private val printer = Printer.noSpaces.copy(dropNullValues = true)
 
   /**
     * @note Use sparingly, prefer `jsonToByteBuffer` or `jsonToBuff` if printing to a response (as it's faster).

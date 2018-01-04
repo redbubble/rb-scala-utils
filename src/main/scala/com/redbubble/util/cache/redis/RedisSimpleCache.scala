@@ -29,7 +29,7 @@ private[cache] final class RedisSimpleCache(name: String, host: String, port: In
     Caching.caching(underlying, ttl, key, codec)(f)(executor)
   }
 
-  override def put[V](key: CacheKey, value: V): Future[Unit] = {
+  override def put[V](key: CacheKey, value: V): Future[Any] = {
     val codec = new ScalaCacheExternaliserCodec[V]
     Caching.put(underlying, ttl, key, codec, value)(executor)
   }
