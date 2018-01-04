@@ -32,12 +32,12 @@ final class StatsCounter(cacheId: String, statsReceiver: StatsReceiver) extends 
 
   override def recordHits(count: Int): Unit = {
     hitCount = hitCount + count
-    hitsCounter.incr(count)
+    hitsCounter.incr(count.toLong)
   }
 
   override def recordMisses(count: Int): Unit = {
     missCount = missCount + count
-    missesCounter.incr(count)
+    missesCounter.incr(count.toLong)
   }
 
   override def recordEviction(): Unit = recordEviction(1)
@@ -46,7 +46,7 @@ final class StatsCounter(cacheId: String, statsReceiver: StatsReceiver) extends 
     evictionCount = evictionCount + 1
     evictionWeight = evictionWeight + weight
     evictionsCounter.incr()
-    evictionsWeightCounter.incr(weight)
+    evictionsWeightCounter.incr(weight.toLong)
   }
 
   override def recordLoadSuccess(loadTime: Long): Unit = {

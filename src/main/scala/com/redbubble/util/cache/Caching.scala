@@ -50,7 +50,7 @@ private[cache] object Caching {
     * @return A Twitter `Future` containing no result (you can use this to know when the value has been cached).
     */
   def put[V, Repr](cache: ScalaCache[Repr], ttl: Duration, key: CacheKey, codec: Codec[V, Repr], value: V)
-      (implicit ex: Executor): Future[Unit] = {
+      (implicit ex: Executor): Future[Any] = {
     val ec = toEc(ex)
     val result = scalacache.put(key)(value, Some(toScalaTtl(ttl)))(cache, flags, codec)
     result.asTwitter(ec)
@@ -83,13 +83,13 @@ private[cache] object Caching {
     * @tparam Repr The type of the serialised/encoded form of the value, e.g. `InMemoryRepr` or `Array[Byte]`.
     * @return A Twitter `Future` the value from the cache.
     */
-  def remove[Repr](cache: ScalaCache[Repr], key: CacheKey)(implicit ex: Executor): Future[Unit] =
+  def remove[Repr](cache: ScalaCache[Repr], key: CacheKey)(implicit ex: Executor): Future[Any] =
     cache.cache.remove(key).asTwitter(toEc(ex))
 
   /**
     * Flush (clear) the cache of all entries.
     */
-  def flush[Repr](cache: ScalaCache[Repr])(implicit ex: Executor): Future[Unit] =
+  def flush[Repr](cache: ScalaCache[Repr])(implicit ex: Executor): Future[Any] =
     cache.cache.removeAll().asTwitter(toEc(ex))
 
   private def toEc(ex: Executor) = fromExecutor(ex)

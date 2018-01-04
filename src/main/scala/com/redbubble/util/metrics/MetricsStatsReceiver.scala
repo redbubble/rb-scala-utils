@@ -26,7 +26,7 @@ package com.redbubble.util.metrics
 import com.codahale.metrics.{Gauge => DwGauge, Metric => DwMetric, MetricFilter => DwMetricFilter, MetricRegistry => DwMetricsRegistry}
 import com.redbubble.util.http.Errors.error
 import com.redbubble.util.metrics.MetricsStatsReceiver._
-import com.twitter.finagle.stats.{Counter => FinagleCounter, Gauge => FinagleGauge, Stat => FinagleStat, StatsReceiver => FinagleStatsReceiver}
+import com.twitter.finagle.stats.{Verbosity, Counter => FinagleCounter, Gauge => FinagleGauge, Stat => FinagleStat, StatsReceiver => FinagleStatsReceiver}
 
 import scala.collection.JavaConverters._
 
@@ -44,20 +44,26 @@ import scala.collection.JavaConverters._
 final class MetricsStatsReceiver extends FinagleStatsReceiver {
   override val repr = this
 
-  override def counter(names: String*) = new FinagleCounter {
-    private val meter = logMetric(names)(ns => metrics.meter(formatMetricNames(ns)))
+  override def counter(names: String*) = counter(Verbosity.Default, names: _*)
 
-    override def incr(delta: Int) = meter.mark(delta.toLong)
+  override def counter(verbosity: Verbosity, name: String*) = new FinagleCounter {
+    private val meter = logMetric(name)(ns => metrics.meter(formatMetricNames(ns)))
+
+    override def incr(delta: Long) = meter.mark(delta)
   }
 
-  override def stat(names: String*) = new FinagleStat {
-    private val histogram = logMetric(names)(ns => metrics.histogram(formatMetricNames(ns)))
+  override def stat(names: String*) = stat(Verbosity.Default, names: _*)
+
+  override def stat(verbosity: Verbosity, name: String*) = new FinagleStat {
+    private val histogram = logMetric(name)(ns => metrics.histogram(formatMetricNames(ns)))
 
     override def add(value: Float) = histogram.update(value.toLong)
   }
 
-  override def addGauge(names: String*)(f: => Float) = new FinagleGauge {
-    logMetric(names) { ns =>
+  override def addGauge(names: String*)(f: => Float) = addGauge(Verbosity.Default, names: _*)(f)
+
+  override def addGauge(verbosity: Verbosity, name: String*)(f: => Float) = new FinagleGauge {
+    logMetric(name) { ns =>
       val name = formatMetricNames(ns)
 
       // we remove old gauge's value before adding a new one
@@ -73,9 +79,9 @@ final class MetricsStatsReceiver extends FinagleStatsReceiver {
     // Note. We want to remove both regular and deduped names in case we've deduplicated this metric name (of which we
     // have no way, here, of knowing).
     override def remove() = {
-      metrics.remove(formatMetricNames(names))
+      metrics.remove(formatMetricNames(name))
       // TODO TJA Fix this to remove up to MaxDedupes.
-      metrics.remove(formatMetricNames(names :+ deduplicatedName))
+      metrics.remove(formatMetricNames(name :+ deduplicatedName))
       ()
     }
   }

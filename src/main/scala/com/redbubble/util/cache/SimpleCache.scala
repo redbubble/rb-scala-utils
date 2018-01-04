@@ -39,7 +39,7 @@ trait SimpleCache {
     *
     * Prefer `caching` instead of this function.
     */
-  def put[V](key: CacheKey, value: V): Future[Unit]
+  def put[V](key: CacheKey, value: V): Future[Any]
 
   /**
     * Manually get a value from the cache.
@@ -51,10 +51,10 @@ trait SimpleCache {
   /**
     * Manually remove an entry from the cache.
     */
-  def remove(key: CacheKey): Future[Unit] = Caching.remove(underlying, key)(executor)
+  def remove(key: CacheKey): Future[Any] = Caching.remove(underlying, key)(executor)
 
   /**
     * Flush (clear) the cache of all entries.
     */
-  def flush(): Future[Unit] = Caching.flush(underlying)(executor)
+  def flush(): Future[Any] = Caching.flush(underlying)(executor)
 }
