@@ -1,3 +1,5 @@
+import sbt.Resolver
+
 organization := "com.redbubble"
 
 name := "rb-scala-utils"
@@ -44,7 +46,8 @@ resolvers ++= Seq(
   Resolver.jcenterRepo,
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
-  "Twitter" at "http://maven.twttr.com"
+  "Twitter" at "http://maven.twttr.com",
+  Resolver.bintrayRepo("redbubble", "open-source")
 )
 
 scalacOptions in Test ++= Seq("-Yrangepos")
