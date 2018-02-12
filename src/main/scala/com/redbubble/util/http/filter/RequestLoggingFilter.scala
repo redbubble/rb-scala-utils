@@ -48,13 +48,13 @@ abstract class RequestLoggingFilter[REQ <: Request](val log: Logger, val formatt
 
   final def logSuccess(replyTime: Duration, request: REQ, response: Response): Unit = {
     val line = formatter.format(request, response, replyTime)
-    log.info(line)
+    log.debug(line)
   }
 
   final def logException(duration: Duration, request: REQ, error: Throwable): Unit = {
     val response = Response(request.version, InternalServerError)
     val line = formatter.format(request, response, duration)
-    log.info(line)
+    log.error(line, error)
   }
 }
 
