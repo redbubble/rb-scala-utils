@@ -54,7 +54,7 @@ abstract class RequestLoggingFilter[REQ <: Request](val log: Logger, val formatt
   final def logException(duration: Duration, request: REQ, error: Throwable): Unit = {
     val response = Response(request.version, InternalServerError)
     val line = formatter.format(request, response, duration)
-    log.error(line)
+    log.error(line, error)
   }
 }
 
