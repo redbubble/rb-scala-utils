@@ -18,7 +18,7 @@ You will need to add something like the following to your `build.sbt`:
 ```scala
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.2.8"
+libraryDependencies += "com.redbubble" %% "rb-scala-utils" % "0.2.11"
 ```
 
 # Release
